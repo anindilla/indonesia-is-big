@@ -145,10 +145,19 @@ export default function Map({ onCountryClick }) {
         console.error('❌ Features array is invalid for Indonesia search')
       }
 
-      // Create proper GeoJSON object
+      // Create proper GeoJSON object - ensure features is valid
+      if (!Array.isArray(features) || features.length === 0) {
+        throw new Error('Cannot create GeoJSON: features array is invalid or empty')
+      }
+      
       const geoJsonData = {
         type: 'FeatureCollection',
         features: features
+      }
+
+      // Validate before passing
+      if (!geoJsonData || !geoJsonData.features || !Array.isArray(geoJsonData.features) || geoJsonData.features.length === 0) {
+        throw new Error('Invalid GeoJSON data created')
       }
 
       // Add countries to map
@@ -174,7 +183,8 @@ export default function Map({ onCountryClick }) {
       return
     }
     
-    console.log('Creating GeoJSON layer with', countriesData.features.length, 'countries')
+    const featuresCount = countriesData?.features?.length || 0
+    console.log('Creating GeoJSON layer with', featuresCount, 'countries')
     
     if (!mapInstanceRef.current) {
       console.error('❌ Map instance not available!')
@@ -211,7 +221,8 @@ export default function Map({ onCountryClick }) {
         countryLayersRef.current[name] = layer
         
         // Only log first few to avoid console spam
-        const countryIndex = Object.keys(countryLayersRef.current).length - 1
+        const layerKeys = countryLayersRef.current ? Object.keys(countryLayersRef.current) : []
+        const countryIndex = layerKeys ? layerKeys.length - 1 : -1
         if (countryIndex < 5) {
           console.log(`Processing country ${countryIndex}: ${name}`)
         }
