@@ -30,23 +30,11 @@ export default function Map({ onCountryClick }) {
         scrollWheelZoom: true
       })
       
-      // Prevent click events on map from interfering
-      mapInstanceRef.current.on('click', (e) => {
-        // Only handle if clicking on empty space (not a country)
-        console.log('Map clicked (empty space)')
-      })
-
       // Add tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19
       }).addTo(mapInstanceRef.current)
-      
-      // Disable click on tile layer to allow map interactions
-      mapInstanceRef.current.on('click', function(e) {
-        // This only fires if no country was clicked (event propagation was stopped)
-        // So we can safely ignore empty map clicks
-      })
 
       // Load data and add countries
       loadData()
@@ -112,6 +100,11 @@ export default function Map({ onCountryClick }) {
         // Store layer reference
         countryLayersRef.current[name] = layer
         
+        // Ensure layer is interactive (clickable)
+        if (layer.setInteractive) {
+          layer.setInteractive(true)
+        }
+        
         // Add tooltip
         layer.bindTooltip(name, {
           permanent: false,
@@ -119,21 +112,51 @@ export default function Map({ onCountryClick }) {
           className: 'country-tooltip'
         })
         
-        // Disable dragging on country layers to allow clicks
-        layer.dragging?.disable()
+        // Track if this was a drag or click
+        let isDragging = false
+        let mouseDownPos = null
+        
+        layer.on('mousedown', (e) => {
+          isDragging = false
+          if (e.originalEvent) {
+            mouseDownPos = {
+              x: e.originalEvent.clientX,
+              y: e.originalEvent.clientY
+            }
+            // Stop map dragging when clicking on country
+            L.DomEvent.stopPropagation(e)
+          }
+        })
+        
+        layer.on('mousemove', (e) => {
+          if (mouseDownPos && e.originalEvent) {
+            const moved = Math.abs(e.originalEvent.clientX - mouseDownPos.x) > 3 ||
+                         Math.abs(e.originalEvent.clientY - mouseDownPos.y) > 3
+            if (moved) {
+              isDragging = true
+            }
+          }
+        })
         
         // Single click handler for countries
         layer.on('click', (e) => {
+          // Only handle if it wasn't a drag
+          if (isDragging) {
+            console.log('Ignored drag on country:', name)
+            return
+          }
+          
           // Stop event from reaching map
           L.DomEvent.stopPropagation(e)
+          L.DomEvent.preventDefault(e)
           if (e.originalEvent) {
             e.originalEvent.stopPropagation()
+            e.originalEvent.preventDefault()
           }
+          
           console.log('Country clicked:', name)
           handleCountryClick(name, feature)
         })
-        
-        // Allow double-click to zoom (Leaflet default, won't interfere with single click)
         
         // Hover effects
         layer.on('mouseover', function() {
@@ -153,6 +176,8 @@ export default function Map({ onCountryClick }) {
         })
       }
     }).addTo(mapInstanceRef.current)
+    
+    console.log('Country layers added to map:', Object.keys(countryLayersRef.current).length)
   }
 
   const handleCountryClick = (countryName, countryFeature) => {
