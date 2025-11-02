@@ -10,6 +10,11 @@ L.Icon.Default.mergeOptions({
 })
 
 export default function Map({ onCountryClick }) {
+  // Ensure onCountryClick is a function
+  const safeOnCountryClick = typeof onCountryClick === 'function' ? onCountryClick : () => {
+    console.warn('onCountryClick callback not provided')
+  }
+  
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const countryLayersRef = useRef({})
@@ -18,6 +23,12 @@ export default function Map({ onCountryClick }) {
   const indonesiaDataRef = useRef(null)
 
   useEffect(() => {
+    // Ensure mapRef is available
+    if (!mapRef.current) {
+      console.error('Map ref not available')
+      return
+    }
+    
     // Initialize map
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = L.map(mapRef.current, {
@@ -329,10 +340,10 @@ export default function Map({ onCountryClick }) {
     if (indonesiaArea && otherArea) {
       const ratio = indonesiaArea / otherArea
       const isBigger = ratio > 1
-      onCountryClick(countryName, ratio, isBigger)
+      safeOnCountryClick(countryName, ratio, isBigger)
     } else {
       console.warn('Missing area data for comparison')
-      onCountryClick(countryName, null, null)
+      safeOnCountryClick(countryName, null, null)
     }
   }
 
