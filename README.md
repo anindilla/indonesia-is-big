@@ -1,6 +1,6 @@
 # Indonesia is Big
 
-An interactive 2D map that lets you click any country to see how Indonesia compares in size. Built with Leaflet.js and deployed as a static site.
+An interactive 2D map that lets you click any country to see how Indonesia compares in size. Built with **Next.js** (React) and **Leaflet.js**, deployed on Vercel.
 
 ## Features
 
@@ -9,10 +9,19 @@ An interactive 2D map that lets you click any country to see how Indonesia compa
 - 📊 Real-time size comparisons with all countries
 - 📱 Mobile-friendly touch controls
 - 🎨 Beautiful, modern UI
+- ⚛️ Built with Next.js and React
 
 ## Live Demo
 
 Visit the live site: [indonesia-is-big.vercel.app](https://indonesia-is-big.vercel.app)
+
+## Tech Stack
+
+- **Next.js 14** - React framework with static site generation
+- **React 18** - UI library
+- **Leaflet.js** - Lightweight 2D map library
+- **Natural Earth Data** - Country boundaries GeoJSON
+- **OpenStreetMap** - Map tiles
 
 ## Local Development
 
@@ -22,63 +31,54 @@ git clone https://github.com/anindilla/indonesia-is-big.git
 cd indonesia-is-big
 ```
 
-2. Serve the files locally:
+2. Install dependencies:
 ```bash
-# Using Python
-python -m http.server 8000
-
-# Using Node.js
-npx serve .
-
-# Using PHP
-php -S localhost:8000
+npm install
 ```
 
-3. Open your browser to `http://localhost:8000`
+3. Run the development server:
+```bash
+npm run dev
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Build for Production
+
+```bash
+npm run build
+npm start
+```
 
 ## Deployment
 
-### Vercel (Current)
+### Vercel (Recommended)
 
 1. Push your code to GitHub
-2. Connect your GitHub repository to Vercel
-3. Vercel will automatically deploy your site
+2. Import the repository in Vercel
+3. Vercel will automatically detect Next.js and deploy
 4. Your site will be available at `https://indonesia-is-big.vercel.app`
 
-### Netlify
-
-1. Push your code to GitHub
-2. Connect your GitHub repository to Netlify
-3. Set build command: (leave empty for static site)
-4. Set publish directory: `.` (root)
-5. Deploy!
-
-### GitHub Pages
-
-1. Push your code to GitHub
-2. Go to repository Settings > Pages
-3. Select "Deploy from a branch" > "main"
-4. Your site will be available at `https://anindilla.github.io/indonesia-is-big`
+The `vercel.json` is already configured for optimal deployment.
 
 ## Project Structure
 
 ```
 indonesia-is-big/
-├── index.html          # Main HTML file
-├── styles.css          # CSS styles
-├── main.js            # Leaflet.js application
-├── vercel.json        # Vercel deployment config
-├── data/
-│   └── country-areas.json # Country area data
-└── README.md          # This file
+├── pages/
+│   ├── _app.js       # Next.js app wrapper
+│   └── index.js      # Home page component
+├── components/
+│   └── Map.js        # Leaflet map component
+├── styles/
+│   └── globals.css   # Global styles
+├── public/
+│   └── data/
+│       └── country-areas.json  # Country area data
+├── next.config.js    # Next.js configuration
+├── package.json      # Dependencies
+└── vercel.json       # Vercel deployment config
 ```
-
-## Technologies Used
-
-- **Leaflet.js** - Lightweight 2D map library
-- **Natural Earth Data** - Country boundaries GeoJSON
-- **Vanilla JavaScript** - No frameworks needed
-- **OpenStreetMap** - Map tiles
 
 ## How It Works
 
@@ -87,6 +87,14 @@ indonesia-is-big/
 3. **Indonesia Overlay**: Scaled Indonesia outline appears over the clicked country
 4. **Size Comparison**: Pre-calculated country areas are compared to show ratios
 5. **Visual Feedback**: Countries highlight on hover, Indonesia overlay shows actual size comparison
+
+## Technologies Used
+
+- **Next.js** - React framework with static site generation
+- **React** - UI library
+- **Leaflet.js** - Lightweight 2D map library
+- **Natural Earth Data** - Country boundaries GeoJSON
+- **OpenStreetMap** - Map tiles
 
 ## Contributing
 

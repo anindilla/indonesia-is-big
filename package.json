@@ -1,25 +1,25 @@
 {
   "name": "indonesia-is-big",
   "version": "1.0.0",
-  "description": "Interactive 3D globe to compare Indonesia's size with other countries",
-  "main": "index.html",
+  "description": "Interactive 2D map to compare Indonesia's size with other countries",
   "scripts": {
-    "start": "python -m http.server 8000",
-    "serve": "npx serve .",
-    "dev": "npx live-server ."
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "keywords": [
-    "threejs",
-    "3d",
-    "globe",
-    "indonesia",
-    "geography",
-    "interactive"
-  ],
-  "author": "Your Name",
-  "license": "MIT",
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1"
+  },
   "devDependencies": {
-    "serve": "^14.2.0",
-    "live-server": "^1.2.2"
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/leaflet": "^1.9.8",
+    "typescript": "^5.0.0"
   }
 }
