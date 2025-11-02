@@ -62,8 +62,12 @@ export default function Map({ onCountryClick }) {
       if (!areasResponse.ok) {
         throw new Error(`Failed to load country areas: ${areasResponse.status}`)
       }
-      countryAreasRef.current = await areasResponse.json()
-      console.log('Country areas loaded:', Object.keys(countryAreasRef.current).length)
+      const areasData = await areasResponse.json()
+      if (!areasData || typeof areasData !== 'object') {
+        throw new Error('Invalid country areas data format')
+      }
+      countryAreasRef.current = areasData
+      console.log('Country areas loaded:', countryAreasRef.current ? Object.keys(countryAreasRef.current).length : 0)
 
       // Load countries data - use direct GeoJSON source
       console.log('Fetching countries GeoJSON...')
@@ -80,33 +84,52 @@ export default function Map({ onCountryClick }) {
       console.log('Features length:', countriesData?.features?.length || 'No features')
 
       // Validate data structure
-      if (!countriesData || !countriesData.features || !Array.isArray(countriesData.features) || countriesData.features.length === 0) {
-        console.error('❌ Invalid data structure:', countriesData)
-        console.error('Data keys:', Object.keys(countriesData || {}))
-        throw new Error('No country features found in data')
+      if (!countriesData || typeof countriesData !== 'object') {
+        throw new Error('Invalid countries data: not an object')
+      }
+      
+      const features = countriesData.features
+      if (!features) {
+        throw new Error('No features property in countries data')
+      }
+      
+      if (!Array.isArray(features)) {
+        throw new Error('Features is not an array: ' + typeof features)
+      }
+      
+      if (features.length === 0) {
+        throw new Error('Features array is empty')
       }
 
-      console.log('✅ Created GeoJSON with', countriesData.features.length, 'features')
+      console.log('✅ Created GeoJSON with', features.length, 'features')
 
       // Find Indonesia
-      indonesiaDataRef.current = countriesData.features.find(
-        feature => feature.properties?.NAME === 'Indonesia' || 
-                   feature.properties?.name === 'Indonesia' ||
-                   feature.properties?.NAME_EN === 'Indonesia'
+      indonesiaDataRef.current = features.find(
+        feature => feature?.properties?.NAME === 'Indonesia' || 
+                   feature?.properties?.name === 'Indonesia' ||
+                   feature?.properties?.NAME_EN === 'Indonesia'
       )
 
       if (indonesiaDataRef.current) {
         console.log('✅ Indonesia data found:', indonesiaDataRef.current.properties)
       } else {
         console.error('❌ Indonesia not found in countries data')
-        console.log('Available country names (first 10):', countriesData.features.slice(0, 10).map(f => 
-          f.properties?.NAME || f.properties?.name || f.properties?.NAME_EN
-        ))
+        if (features && features.length > 0) {
+          console.log('Available country names (first 10):', features.slice(0, 10).map(f => 
+            f?.properties?.NAME || f?.properties?.name || f?.properties?.NAME_EN || 'Unknown'
+          ))
+        }
+      }
+
+      // Create proper GeoJSON object
+      const geoJsonData = {
+        type: 'FeatureCollection',
+        features: features
       }
 
       // Add countries to map
       console.log('Adding countries to map...')
-      addCountryBoundaries(countriesData)
+      addCountryBoundaries(geoJsonData)
       console.log('✅ Countries added to map')
     } catch (error) {
       console.error('❌ Error loading data:', error)
@@ -247,8 +270,12 @@ export default function Map({ onCountryClick }) {
     console.log('GeoJSON layer created, adding to map...')
     countryLayer.addTo(mapInstanceRef.current)
     console.log('✅ GeoJSON layer added to map')
-    console.log('Country layers stored:', Object.keys(countryLayersRef.current).length)
-    console.log('Sample countries:', Object.keys(countryLayersRef.current).slice(0, 5))
+    
+    const layerKeys = countryLayersRef.current ? Object.keys(countryLayersRef.current) : []
+    console.log('Country layers stored:', layerKeys.length)
+    if (layerKeys.length > 0) {
+      console.log('Sample countries:', layerKeys.slice(0, 5))
+    }
     
     // Verify layers are on the map
     setTimeout(() => {
@@ -417,13 +444,20 @@ export default function Map({ onCountryClick }) {
   }
 
   const hideComparison = () => {
-    if (overlayRef.current) {
+    if (overlayRef.current && mapInstanceRef.current) {
       mapInstanceRef.current.removeLayer(overlayRef.current)
       overlayRef.current = null
     }
 
+    if (!countryLayersRef.current) return
+    
     Object.values(countryLayersRef.current).forEach(layer => {
-      const name = layer.feature.properties.NAME
+      if (!layer || !layer.feature || !layer.feature.properties) return
+      
+      const name = layer.feature.properties.NAME || 
+                   layer.feature.properties.name ||
+                   layer.feature.properties.NAME_EN ||
+                   ''
       const isIndonesia = name === 'Indonesia'
       layer.setStyle({
         fillColor: isIndonesia ? '#ff4444' : '#ffffff',
