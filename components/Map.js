@@ -59,66 +59,79 @@ export default function Map({ onCountryClick }) {
       // Load country areas
       console.log('Fetching country areas...')
       const areasResponse = await fetch('/data/country-areas.json')
-      if (!areasResponse.ok) {
-        throw new Error(`Failed to load country areas: ${areasResponse.status}`)
+      if (!areasResponse || !areasResponse.ok) {
+        throw new Error(`Failed to load country areas: ${areasResponse?.status || 'unknown'}`)
       }
       const areasData = await areasResponse.json()
-      if (!areasData || typeof areasData !== 'object') {
+      if (!areasData || typeof areasData !== 'object' || Array.isArray(areasData)) {
         throw new Error('Invalid country areas data format')
       }
-      countryAreasRef.current = areasData
-      console.log('Country areas loaded:', countryAreasRef.current ? Object.keys(countryAreasRef.current).length : 0)
+      countryAreasRef.current = areasData || {}
+      const areaKeys = countryAreasRef.current ? Object.keys(countryAreasRef.current) : []
+      console.log('Country areas loaded:', areaKeys.length || 0)
 
       // Load countries data - use direct GeoJSON source
       console.log('Fetching countries GeoJSON...')
       
       // Use a reliable GeoJSON source
       const countriesResponse = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
-      if (!countriesResponse.ok) {
-        throw new Error(`Failed to load countries: ${countriesResponse.status}`)
+      if (!countriesResponse || !countriesResponse.ok) {
+        throw new Error(`Failed to load countries: ${countriesResponse?.status || 'unknown'}`)
       }
       const countriesData = await countriesResponse.json()
 
-      console.log('Countries data type:', countriesData?.type)
-      console.log('Has features array?', Array.isArray(countriesData?.features))
-      console.log('Features length:', countriesData?.features?.length || 'No features')
-
-      // Validate data structure
-      if (!countriesData || typeof countriesData !== 'object') {
-        throw new Error('Invalid countries data: not an object')
+      console.log('Countries data received:', !!countriesData)
+      console.log('Countries data type:', countriesData?.type || 'unknown')
+      
+      // Validate data structure step by step
+      if (!countriesData) {
+        throw new Error('Countries data is null or undefined')
       }
       
-      const features = countriesData.features
+      if (typeof countriesData !== 'object' || Array.isArray(countriesData)) {
+        throw new Error('Countries data is not a valid object')
+      }
+      
+      const features = countriesData?.features
+      console.log('Features exists?', !!features)
+      console.log('Features type:', Array.isArray(features) ? 'array' : typeof features)
+      
       if (!features) {
-        throw new Error('No features property in countries data')
+        throw new Error('No features property in countries data. Available keys: ' + Object.keys(countriesData || {}).join(', '))
       }
       
       if (!Array.isArray(features)) {
-        throw new Error('Features is not an array: ' + typeof features)
+        throw new Error('Features is not an array. Type: ' + typeof features)
       }
       
-      if (features.length === 0) {
+      const featuresLength = features ? features.length : 0
+      if (featuresLength === 0) {
         throw new Error('Features array is empty')
       }
 
-      console.log('✅ Created GeoJSON with', features.length, 'features')
+      console.log('✅ Created GeoJSON with', featuresLength, 'features')
 
-      // Find Indonesia
-      indonesiaDataRef.current = features.find(
-        feature => feature?.properties?.NAME === 'Indonesia' || 
-                   feature?.properties?.name === 'Indonesia' ||
-                   feature?.properties?.NAME_EN === 'Indonesia'
-      )
+      // Find Indonesia - safely
+      if (Array.isArray(features) && features.length > 0) {
+        indonesiaDataRef.current = features.find(
+          feature => feature && feature.properties && (
+            feature.properties.NAME === 'Indonesia' || 
+            feature.properties.name === 'Indonesia' ||
+            feature.properties.NAME_EN === 'Indonesia'
+          )
+        )
 
-      if (indonesiaDataRef.current) {
-        console.log('✅ Indonesia data found:', indonesiaDataRef.current.properties)
-      } else {
-        console.error('❌ Indonesia not found in countries data')
-        if (features && features.length > 0) {
-          console.log('Available country names (first 10):', features.slice(0, 10).map(f => 
-            f?.properties?.NAME || f?.properties?.name || f?.properties?.NAME_EN || 'Unknown'
-          ))
+        if (indonesiaDataRef.current) {
+          console.log('✅ Indonesia data found:', indonesiaDataRef.current.properties)
+        } else {
+          console.error('❌ Indonesia not found in countries data')
+          const sampleNames = features.slice(0, Math.min(10, features.length))
+            .map(f => f?.properties?.NAME || f?.properties?.name || f?.properties?.NAME_EN || 'Unknown')
+            .filter(n => n !== 'Unknown')
+          console.log('Available country names (first 10):', sampleNames)
         }
+      } else {
+        console.error('❌ Features array is invalid for Indonesia search')
       }
 
       // Create proper GeoJSON object
@@ -133,7 +146,14 @@ export default function Map({ onCountryClick }) {
       console.log('✅ Countries added to map')
     } catch (error) {
       console.error('❌ Error loading data:', error)
-      console.error('Error details:', error.message, error.stack)
+      if (error && typeof error === 'object') {
+        console.error('Error message:', error.message || 'Unknown error')
+        console.error('Error stack:', error.stack || 'No stack trace')
+        console.error('Error name:', error.name || 'Unknown')
+      } else {
+        console.error('Error value:', error)
+      }
+      // Don't crash the app - just log the error
     }
   }
 
