@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#ff4444" stroke="#ffffff" stroke-width="2"/>
+  
+  <!-- Simplified Indonesia outline (archipelago shape) -->
+  <g fill="#ffffff" stroke="#ffffff" stroke-width="1.5">
+    <!-- Sumatra -->
+    <ellipse cx="30" cy="50" rx="8" ry="12"/>
+    <!-- Java -->
+    <ellipse cx="40" cy="60" rx="6" ry="10"/>
+    <!-- Kalimantan (Borneo) -->
+    <ellipse cx="50" cy="50" rx="10" ry="14"/>
+    <!-- Sulawesi -->
+    <ellipse cx="60" cy="55" rx="7" ry="11"/>
+    <!-- Papua -->
+    <ellipse cx="70" cy="52" rx="8" ry="13"/>
+  </g>
+  
+  <!-- Comparison symbol (overlay circle) -->
+  <circle cx="70" cy="30" r="12" fill="#ffffff" opacity="0.9"/>
+  <text x="70" y="35" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#ff4444">VS</text>
+</svg>
