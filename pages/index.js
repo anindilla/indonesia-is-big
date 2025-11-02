@@ -9,12 +9,23 @@ export default function Home() {
   const [showComparison, setShowComparison] = useState(false)
 
   const handleCountryClick = (countryName, ratio, isBigger) => {
-    if (isBigger) {
-      setComparisonText(`Indonesia is ${ratio.toFixed(1)} times bigger than ${countryName}`)
-    } else {
-      setComparisonText(`Indonesia is ${ratio.toFixed(1)} times smaller than ${countryName}`)
+    try {
+      if (countryName && ratio !== null && ratio !== undefined && !isNaN(ratio) && isFinite(ratio) && ratio > 0) {
+        if (isBigger && ratio > 1) {
+          setComparisonText(`Indonesia is ${ratio.toFixed(1)} times bigger than ${countryName}`)
+        } else if (!isBigger && ratio > 0) {
+          setComparisonText(`Indonesia is ${(1/ratio).toFixed(1)} times smaller than ${countryName}`)
+        } else {
+          setComparisonText(`No area data available for ${countryName}`)
+        }
+      } else {
+        setComparisonText(`No area data available for ${countryName || 'this country'}`)
+      }
+      setShowComparison(true)
+    } catch (error) {
+      console.error('Error in handleCountryClick:', error)
+      setComparisonText(`Error comparing with ${countryName || 'this country'}`)
     }
-    setShowComparison(true)
   }
 
   const handleReset = () => {
