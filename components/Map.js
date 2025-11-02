@@ -73,15 +73,36 @@ export default function Map({ onCountryClick }) {
       }
       const countriesData = await countriesResponse.json()
 
-      console.log('Countries data type:', countriesData.type)
-      console.log('Loaded countries:', countriesData.features?.length || 'No features')
+      console.log('Raw countries data:', countriesData)
+      console.log('Countries data type:', countriesData?.type)
+      console.log('Has features array?', Array.isArray(countriesData?.features))
+      console.log('Features length:', countriesData?.features?.length || 'No features')
 
-      if (!countriesData.features || countriesData.features.length === 0) {
-        throw new Error('No country features found in data')
+      // Handle different possible data structures
+      let features = countriesData?.features
+      
+      // If it's a topojson or different format, try to extract features
+      if (!features && countriesData.objects) {
+        console.log('TopoJSON format detected, extracting features...')
+        // This might be TopoJSON format, we'll handle it differently
+        features = null
       }
 
+      if (!features || !Array.isArray(features) || features.length === 0) {
+        console.error('Invalid data structure:', countriesData)
+        throw new Error('No country features found in data. Data structure: ' + JSON.stringify(Object.keys(countriesData || {})))
+      }
+
+      // Create a proper GeoJSON FeatureCollection
+      const geoJsonData = {
+        type: 'FeatureCollection',
+        features: features
+      }
+
+      console.log('Created GeoJSON with', geoJsonData.features.length, 'features')
+
       // Find Indonesia
-      indonesiaDataRef.current = countriesData.features.find(
+      indonesiaDataRef.current = geoJsonData.features.find(
         feature => feature.properties?.NAME === 'Indonesia'
       )
 
@@ -89,12 +110,12 @@ export default function Map({ onCountryClick }) {
         console.log('✅ Indonesia data found:', indonesiaDataRef.current.properties.NAME)
       } else {
         console.error('❌ Indonesia not found in countries data')
-        console.log('Available country names (first 10):', countriesData.features.slice(0, 10).map(f => f.properties?.NAME))
+        console.log('Available country names (first 10):', geoJsonData.features.slice(0, 10).map(f => f.properties?.NAME || f.properties?.name))
       }
 
       // Add countries to map
       console.log('Adding countries to map...')
-      addCountryBoundaries(countriesData)
+      addCountryBoundaries(geoJsonData)
       console.log('✅ Countries added to map')
     } catch (error) {
       console.error('❌ Error loading data:', error)
@@ -103,6 +124,11 @@ export default function Map({ onCountryClick }) {
   }
 
   const addCountryBoundaries = (countriesData) => {
+    if (!countriesData || !countriesData.features || !Array.isArray(countriesData.features)) {
+      console.error('❌ Invalid countries data structure:', countriesData)
+      return
+    }
+    
     console.log('Creating GeoJSON layer with', countriesData.features.length, 'countries')
     
     if (!mapInstanceRef.current) {
