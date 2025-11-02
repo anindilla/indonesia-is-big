@@ -54,35 +54,62 @@ export default function Map({ onCountryClick }) {
 
   const loadData = async () => {
     try {
+      console.log('Starting data load...')
+      
       // Load country areas
+      console.log('Fetching country areas...')
       const areasResponse = await fetch('/data/country-areas.json')
+      if (!areasResponse.ok) {
+        throw new Error(`Failed to load country areas: ${areasResponse.status}`)
+      }
       countryAreasRef.current = await areasResponse.json()
+      console.log('Country areas loaded:', Object.keys(countryAreasRef.current).length)
 
       // Load countries data
+      console.log('Fetching countries GeoJSON...')
       const countriesResponse = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      if (!countriesResponse.ok) {
+        throw new Error(`Failed to load countries: ${countriesResponse.status}`)
+      }
       const countriesData = await countriesResponse.json()
 
-      console.log('Loaded countries:', countriesData.features.length)
+      console.log('Countries data type:', countriesData.type)
+      console.log('Loaded countries:', countriesData.features?.length || 'No features')
+
+      if (!countriesData.features || countriesData.features.length === 0) {
+        throw new Error('No country features found in data')
+      }
 
       // Find Indonesia
       indonesiaDataRef.current = countriesData.features.find(
-        feature => feature.properties.NAME === 'Indonesia'
+        feature => feature.properties?.NAME === 'Indonesia'
       )
 
       if (indonesiaDataRef.current) {
-        console.log('Indonesia data found:', indonesiaDataRef.current.properties.NAME)
+        console.log('✅ Indonesia data found:', indonesiaDataRef.current.properties.NAME)
       } else {
-        console.error('Indonesia not found in countries data')
+        console.error('❌ Indonesia not found in countries data')
+        console.log('Available country names (first 10):', countriesData.features.slice(0, 10).map(f => f.properties?.NAME))
       }
 
       // Add countries to map
+      console.log('Adding countries to map...')
       addCountryBoundaries(countriesData)
+      console.log('✅ Countries added to map')
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error('❌ Error loading data:', error)
+      console.error('Error details:', error.message, error.stack)
     }
   }
 
   const addCountryBoundaries = (countriesData) => {
+    console.log('Creating GeoJSON layer with', countriesData.features.length, 'countries')
+    
+    if (!mapInstanceRef.current) {
+      console.error('❌ Map instance not available!')
+      return
+    }
+    
     const countryLayer = L.geoJSON(countriesData, {
       style: (feature) => {
         const name = feature.properties.NAME
@@ -95,10 +122,16 @@ export default function Map({ onCountryClick }) {
         }
       },
       onEachFeature: (feature, layer) => {
-        const name = feature.properties.NAME
+        const name = feature.properties?.NAME || feature.properties?.name || 'Unknown'
+        
+        if (!name || name === 'Unknown') {
+          console.warn('Country without name:', feature.properties)
+        }
         
         // Store layer reference
         countryLayersRef.current[name] = layer
+        
+        console.log(`Processing country: ${name}`)
         
         // Ensure layer is interactive (clickable)
         if (layer.setInteractive) {
@@ -140,6 +173,8 @@ export default function Map({ onCountryClick }) {
         
         // Single click handler for countries
         layer.on('click', (e) => {
+          console.log(`🔵 Click event fired on: ${name}`, e)
+          
           // Only handle if it wasn't a drag
           if (isDragging) {
             console.log('Ignored drag on country:', name)
@@ -154,9 +189,12 @@ export default function Map({ onCountryClick }) {
             e.originalEvent.preventDefault()
           }
           
-          console.log('Country clicked:', name)
+          console.log('✅ Country clicked:', name)
           handleCountryClick(name, feature)
         })
+        
+        // Test if layer is actually clickable
+        console.log(`Layer for ${name} created, interactive:`, layer.options?.interactive !== false)
         
         // Hover effects
         layer.on('mouseover', function() {
@@ -175,9 +213,25 @@ export default function Map({ onCountryClick }) {
           })
         })
       }
-    }).addTo(mapInstanceRef.current)
+    })
     
-    console.log('Country layers added to map:', Object.keys(countryLayersRef.current).length)
+    console.log('GeoJSON layer created, adding to map...')
+    countryLayer.addTo(mapInstanceRef.current)
+    console.log('✅ GeoJSON layer added to map')
+    console.log('Country layers stored:', Object.keys(countryLayersRef.current).length)
+    console.log('Sample countries:', Object.keys(countryLayersRef.current).slice(0, 5))
+    
+    // Verify layers are on the map
+    setTimeout(() => {
+      const mapLayers = mapInstanceRef.current._layers
+      let geoJsonLayerCount = 0
+      for (let id in mapLayers) {
+        if (mapLayers[id] instanceof L.GeoJSON) {
+          geoJsonLayerCount++
+        }
+      }
+      console.log('GeoJSON layers on map:', geoJsonLayerCount)
+    }, 1000)
   }
 
   const handleCountryClick = (countryName, countryFeature) => {
