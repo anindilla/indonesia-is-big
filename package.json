@@ -1,0 +1,25 @@
+{
+  "name": "indonesia-is-big",
+  "version": "1.0.0",
+  "description": "Interactive 3D globe to compare Indonesia's size with other countries",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "npx serve .",
+    "dev": "npx live-server ."
+  },
+  "keywords": [
+    "threejs",
+    "3d",
+    "globe",
+    "indonesia",
+    "geography",
+    "interactive"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0",
+    "live-server": "^1.2.2"
+  }
+}
