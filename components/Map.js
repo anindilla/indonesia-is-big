@@ -119,40 +119,21 @@ export default function Map({ onCountryClick }) {
           className: 'country-tooltip'
         })
         
-        // Track mouse down to distinguish click from drag
-        let mouseDownTime = 0
-        let mouseDownPos = null
-        const CLICK_THRESHOLD = 200 // milliseconds
-        const DRAG_THRESHOLD = 5 // pixels
+        // Disable dragging on country layers to allow clicks
+        layer.dragging?.disable()
         
-        layer.on('mousedown', (e) => {
-          mouseDownTime = Date.now()
-          if (e.originalEvent) {
-            mouseDownPos = {
-              x: e.originalEvent.clientX,
-              y: e.originalEvent.clientY
-            }
-          }
-        })
-        
-        // Click handler - only fires if it wasn't a drag
+        // Single click handler for countries
         layer.on('click', (e) => {
-          const timeDiff = Date.now() - mouseDownTime
-          const isDrag = mouseDownPos && (
-            Math.abs(e.originalEvent.clientX - mouseDownPos.x) > DRAG_THRESHOLD ||
-            Math.abs(e.originalEvent.clientY - mouseDownPos.y) > DRAG_THRESHOLD
-          )
-          
-          // Only handle if it's a quick click (not a drag)
-          if (timeDiff < CLICK_THRESHOLD && !isDrag) {
-            if (e.originalEvent) {
-              e.originalEvent.stopPropagation()
-            }
-            L.DomEvent.stopPropagation(e)
-            L.DomEvent.preventDefault(e)
-            handleCountryClick(name, feature)
+          // Stop event from reaching map
+          L.DomEvent.stopPropagation(e)
+          if (e.originalEvent) {
+            e.originalEvent.stopPropagation()
           }
+          console.log('Country clicked:', name)
+          handleCountryClick(name, feature)
         })
+        
+        // Allow double-click to zoom (Leaflet default, won't interfere with single click)
         
         // Hover effects
         layer.on('mouseover', function() {
