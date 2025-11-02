@@ -65,57 +65,48 @@ export default function Map({ onCountryClick }) {
       countryAreasRef.current = await areasResponse.json()
       console.log('Country areas loaded:', Object.keys(countryAreasRef.current).length)
 
-      // Load countries data
+      // Load countries data - use direct GeoJSON source
       console.log('Fetching countries GeoJSON...')
-      const countriesResponse = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      
+      // Use a reliable GeoJSON source
+      const countriesResponse = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
       if (!countriesResponse.ok) {
         throw new Error(`Failed to load countries: ${countriesResponse.status}`)
       }
       const countriesData = await countriesResponse.json()
 
-      console.log('Raw countries data:', countriesData)
       console.log('Countries data type:', countriesData?.type)
       console.log('Has features array?', Array.isArray(countriesData?.features))
       console.log('Features length:', countriesData?.features?.length || 'No features')
 
-      // Handle different possible data structures
-      let features = countriesData?.features
-      
-      // If it's a topojson or different format, try to extract features
-      if (!features && countriesData.objects) {
-        console.log('TopoJSON format detected, extracting features...')
-        // This might be TopoJSON format, we'll handle it differently
-        features = null
+      // Validate data structure
+      if (!countriesData || !countriesData.features || !Array.isArray(countriesData.features) || countriesData.features.length === 0) {
+        console.error('❌ Invalid data structure:', countriesData)
+        console.error('Data keys:', Object.keys(countriesData || {}))
+        throw new Error('No country features found in data')
       }
 
-      if (!features || !Array.isArray(features) || features.length === 0) {
-        console.error('Invalid data structure:', countriesData)
-        throw new Error('No country features found in data. Data structure: ' + JSON.stringify(Object.keys(countriesData || {})))
-      }
-
-      // Create a proper GeoJSON FeatureCollection
-      const geoJsonData = {
-        type: 'FeatureCollection',
-        features: features
-      }
-
-      console.log('Created GeoJSON with', geoJsonData.features.length, 'features')
+      console.log('✅ Created GeoJSON with', countriesData.features.length, 'features')
 
       // Find Indonesia
-      indonesiaDataRef.current = geoJsonData.features.find(
-        feature => feature.properties?.NAME === 'Indonesia'
+      indonesiaDataRef.current = countriesData.features.find(
+        feature => feature.properties?.NAME === 'Indonesia' || 
+                   feature.properties?.name === 'Indonesia' ||
+                   feature.properties?.NAME_EN === 'Indonesia'
       )
 
       if (indonesiaDataRef.current) {
-        console.log('✅ Indonesia data found:', indonesiaDataRef.current.properties.NAME)
+        console.log('✅ Indonesia data found:', indonesiaDataRef.current.properties)
       } else {
         console.error('❌ Indonesia not found in countries data')
-        console.log('Available country names (first 10):', geoJsonData.features.slice(0, 10).map(f => f.properties?.NAME || f.properties?.name))
+        console.log('Available country names (first 10):', countriesData.features.slice(0, 10).map(f => 
+          f.properties?.NAME || f.properties?.name || f.properties?.NAME_EN
+        ))
       }
 
       // Add countries to map
       console.log('Adding countries to map...')
-      addCountryBoundaries(geoJsonData)
+      addCountryBoundaries(countriesData)
       console.log('✅ Countries added to map')
     } catch (error) {
       console.error('❌ Error loading data:', error)
@@ -148,7 +139,11 @@ export default function Map({ onCountryClick }) {
         }
       },
       onEachFeature: (feature, layer) => {
-        const name = feature.properties?.NAME || feature.properties?.name || 'Unknown'
+        const name = feature.properties?.NAME || 
+                     feature.properties?.name || 
+                     feature.properties?.NAME_EN ||
+                     feature.properties?.NAME_LONG ||
+                     'Unknown'
         
         if (!name || name === 'Unknown') {
           console.warn('Country without name:', feature.properties)
@@ -157,7 +152,11 @@ export default function Map({ onCountryClick }) {
         // Store layer reference
         countryLayersRef.current[name] = layer
         
-        console.log(`Processing country: ${name}`)
+        // Only log first few to avoid console spam
+        const countryIndex = Object.keys(countryLayersRef.current).length - 1
+        if (countryIndex < 5) {
+          console.log(`Processing country ${countryIndex}: ${name}`)
+        }
         
         // Ensure layer is interactive (clickable)
         if (layer.setInteractive) {
