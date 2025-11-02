@@ -24,7 +24,16 @@ export default function Map({ onCountryClick }) {
         center: [-0.7893, 113.9213],
         zoom: 3,
         minZoom: 2,
-        maxZoom: 10
+        maxZoom: 10,
+        doubleClickZoom: true,
+        dragging: true,
+        scrollWheelZoom: true
+      })
+      
+      // Prevent click events on map from interfering
+      mapInstanceRef.current.on('click', (e) => {
+        // Only handle if clicking on empty space (not a country)
+        console.log('Map clicked (empty space)')
       })
 
       // Add tile layer
@@ -32,6 +41,12 @@ export default function Map({ onCountryClick }) {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19
       }).addTo(mapInstanceRef.current)
+      
+      // Disable click on tile layer to allow map interactions
+      mapInstanceRef.current.on('click', function(e) {
+        // This only fires if no country was clicked (event propagation was stopped)
+        // So we can safely ignore empty map clicks
+      })
 
       // Load data and add countries
       loadData()
@@ -104,10 +119,23 @@ export default function Map({ onCountryClick }) {
           className: 'country-tooltip'
         })
         
-        // Click handler
+        // Click handler - only for countries, not map
         layer.on('click', (e) => {
-          e.originalEvent.stopPropagation()
+          // Stop event from bubbling to map
+          if (e.originalEvent) {
+            e.originalEvent.stopPropagation()
+            e.originalEvent.preventDefault()
+          }
+          L.DomEvent.stopPropagation(e)
           handleCountryClick(name, feature)
+        })
+        
+        // Prevent map dragging when clicking country
+        layer.on('mousedown', (e) => {
+          if (e.originalEvent) {
+            e.originalEvent.stopPropagation()
+          }
+          L.DomEvent.stopPropagation(e)
         })
         
         // Hover effects
