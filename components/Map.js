@@ -129,7 +129,11 @@ export default function Map({ onCountryClick }) {
     
     const countryLayer = L.geoJSON(countriesData, {
       style: (feature) => {
-        const name = feature.properties.NAME
+        const name = feature.properties?.NAME || 
+                     feature.properties?.name || 
+                     feature.properties?.NAME_EN ||
+                     feature.properties?.NAME_LONG ||
+                     ''
         return {
           fillColor: name === 'Indonesia' ? '#ff4444' : '#ffffff',
           fillOpacity: name === 'Indonesia' ? 0.7 : 0.3,
