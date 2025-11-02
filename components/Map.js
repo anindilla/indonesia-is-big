@@ -119,23 +119,39 @@ export default function Map({ onCountryClick }) {
           className: 'country-tooltip'
         })
         
-        // Click handler - only for countries, not map
-        layer.on('click', (e) => {
-          // Stop event from bubbling to map
+        // Track mouse down to distinguish click from drag
+        let mouseDownTime = 0
+        let mouseDownPos = null
+        const CLICK_THRESHOLD = 200 // milliseconds
+        const DRAG_THRESHOLD = 5 // pixels
+        
+        layer.on('mousedown', (e) => {
+          mouseDownTime = Date.now()
           if (e.originalEvent) {
-            e.originalEvent.stopPropagation()
-            e.originalEvent.preventDefault()
+            mouseDownPos = {
+              x: e.originalEvent.clientX,
+              y: e.originalEvent.clientY
+            }
           }
-          L.DomEvent.stopPropagation(e)
-          handleCountryClick(name, feature)
         })
         
-        // Prevent map dragging when clicking country
-        layer.on('mousedown', (e) => {
-          if (e.originalEvent) {
-            e.originalEvent.stopPropagation()
+        // Click handler - only fires if it wasn't a drag
+        layer.on('click', (e) => {
+          const timeDiff = Date.now() - mouseDownTime
+          const isDrag = mouseDownPos && (
+            Math.abs(e.originalEvent.clientX - mouseDownPos.x) > DRAG_THRESHOLD ||
+            Math.abs(e.originalEvent.clientY - mouseDownPos.y) > DRAG_THRESHOLD
+          )
+          
+          // Only handle if it's a quick click (not a drag)
+          if (timeDiff < CLICK_THRESHOLD && !isDrag) {
+            if (e.originalEvent) {
+              e.originalEvent.stopPropagation()
+            }
+            L.DomEvent.stopPropagation(e)
+            L.DomEvent.preventDefault(e)
+            handleCountryClick(name, feature)
           }
-          L.DomEvent.stopPropagation(e)
         })
         
         // Hover effects
