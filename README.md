@@ -7,6 +7,8 @@ An interactive 2D map that lets you click any country to see how Indonesia compa
 - 🗺️ Interactive 2D world map with all country boundaries
 - 🖱️ Click any country to see Indonesia's size overlay
 - 📊 Real-time size comparisons with all countries
+- 🧠 On-map quick facts highlighting Indonesia's scale
+- 🕒 Recent comparison history so you can replay discoveries
 - 📱 Mobile-friendly touch controls
 - 🎨 Beautiful, modern UI
 - ⚛️ Built with Next.js and React
